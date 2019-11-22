@@ -29,39 +29,35 @@ public:
 		return obj;
 	}
 
+
 	lua_State* GetLuaState() {return m_pState;}
-	// 加载lua脚本环境
-	// path  路径
-	// file 启动脚本文件
-	//例如 LoadScript("../sample/script/", "../sample/script/main.lua")
-	bool LoadScript(const char* path, const char* file);
 
 	// 注册一个c函数到lua
 	void RegFun2Lua(const char* funName, lua_CFunction fun);
 
-	void AddSearchPath(const char* path);
-
-	bool ExecuteString(const char* str);
-	// 热更新指定脚本
-	bool ReloadFile(const char* filePath);
-
-	//当C++ API希望抛出一个Lua异常时（即通过lua_error抛出）
-	void GenerateLuaError(const char* errorMsg, ...);
+	//加载并运行脚本，或者热更新
+	bool DoFile(const char* filePath);
+	bool DoString(const char* str);
 
 	void SetInfoLogFun(LOG_FUN function);
 	void SetErrorLogFun(LOG_FUN function);
 
-	static void PrintStack(lua_State *pState);
-	void TryLog(const char* msg);
 
 	void TryError(const char* msg);
+	//当C++ 希望抛出一个Lua异常时,退出后续的lua执行
+	void MakeLuaException(const char* errorMsg, ...);
+	static void PrintStack(lua_State *pState);
 private:
 	CppLuaMgr();
 	~CppLuaMgr();
 
+	static int LogInfo(lua_State *L);
+	static int LogError(lua_State* L);
+	static int Traceback(lua_State *pState);
 
 	void DoLogMessage(LOG_FUN function, const char* msg);
 };
 
 #define gScriptManager CppLuaMgr::Obj()
 
+#define REG_C_FUN(fun) CppLuaMgr::Obj().RegFun2Lua(#fun, fun)

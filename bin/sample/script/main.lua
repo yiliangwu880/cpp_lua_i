@@ -1,11 +1,14 @@
 
 --require "common/class"
 
+
+
+
 print("start\n")
-log_print("abc")
---log_error("abc")
+LogInfo("abc")
+--LogError("abc")
 --local aa = [[adbd]]
---log_print(aa)
+--LogInfo(aa)
 function call3()
 	local a  =3
 	local b = 123
@@ -26,16 +29,24 @@ function call2()
 	call3()
 end
 
-function call1()
+function call1(p1,p2)
 	local a = 1
-	call2()
+	--call2()
+	return p1,p2
 end
-
+function callLuaException2(p1,p2)
+	DDerror("al12") --exception
+end
+function callLuaException()
+	callLuaException2();
+end
 function test()
 	local a = 0
 	print("test 123455")
 	
-	DDerror("al12")
+	--DDerror("al12")
 	return 1,2,3, "12345", 67111111111
 end
+LuaCallFun1(55);
+--LuaCallFun_exception();
 test()

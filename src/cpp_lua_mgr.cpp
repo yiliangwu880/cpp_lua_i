@@ -3,13 +3,7 @@ using namespace std;
 
 
 namespace{
-static const char * INIT_SCRIPT = R"(
-	local path,script = ...
-	path = string.match(path,[[(.*)/[^/]*$]])
-	package.path = package.path .. [[;]] .. path .. [[/?.lua;]] .. path .. [[/?/init.lua]]
-	local f = assert(loadfile(script))
-	f(script)
-)";
+
 
 static int Panic(lua_State* pState) {
 	const char *msg = lua_tostring(pState, -1);
@@ -59,21 +53,33 @@ static int table_unpack(lua_State *L) {
 
 
 
-static int log_error(lua_State* L) 
+
+}
+CppLuaMgr::CppLuaMgr()
 {
-	const char *msg = lua_tostring(L, -1);
-	gScriptManager.TryError(msg);
-	return 0;
+	m_pState = luaL_newstate();
+	lua_atpanic(m_pState, Panic);
+	luaL_openlibs(m_pState);
+
+#define REG_FUN(fun) RegFun2Lua(#fun, fun)
+	REG_FUN(LogInfo);
+	REG_FUN(LogError);
+	REG_FUN(table_pack);
+	REG_FUN(table_unpack);
+#undef REG_FUN
 }
 
-static int log_print(lua_State *L) 
+CppLuaMgr::~CppLuaMgr()
 {
-	const char *msg = lua_tostring(L, -1);
-	gScriptManager.TryLog(msg);
-	return 0;
+	if (m_pState) {
+		lua_close(m_pState);
+		m_pState = nullptr;
+	}
 }
 
-int Traceback(lua_State *pState) {
+
+
+int CppLuaMgr::Traceback(lua_State *pState) {
 	const char *msg = lua_tostring(pState, -1);
 
 	if (msg) {
@@ -91,49 +97,24 @@ int Traceback(lua_State *pState) {
 }
 
 
-}
-CppLuaMgr::CppLuaMgr()
+int CppLuaMgr::LogError(lua_State* L)
 {
-	m_pState = luaL_newstate();
-	lua_atpanic(m_pState, Panic);
-	luaL_openlibs(m_pState);
-
-#define RegFun(fun) RegFun2Lua(#fun, fun)
-	RegFun(log_print);
-	RegFun(log_error);
-	RegFun(table_pack);
-	RegFun(table_unpack);
-#undef RegFun
+	const char *msg = lua_tostring(L, -1);
+	gScriptManager.TryError(msg);
+	return 0;
 }
 
-CppLuaMgr::~CppLuaMgr()
+int CppLuaMgr::LogInfo(lua_State *L)
 {
-	if (m_pState) {
-		lua_close(m_pState);
-		m_pState = nullptr;
+	const char *msg = lua_tostring(L, -1);
+
+	if (!CppLuaMgr::Obj().m_info_log_fun) {
+		printf("%s\n", msg);
+		return 0;
 	}
-}
 
-
-void CppLuaMgr::AddSearchPath(const char* path) {
-
-	char strPath[1024] = { 0 };
-	sprintf(strPath, "local path = string.match([[%s]],[[(.*)/[^/]*$]])\n package.path = package.path .. [[;]] .. path .. [[/?.lua;]] .. path .. [[/?/init.lua]]\n", path);
-	ExecuteString(strPath);
-}
-
-bool CppLuaMgr::LoadScript(const char* path, const char* file) {
-	lua_pushcfunction(m_pState, Traceback);//ÓÃÍ¾Î´Ã÷
-
-	int tb = lua_gettop(m_pState);
-	luaL_loadstring(m_pState, INIT_SCRIPT);
-
-	lua_pushstring(m_pState, path);
-	lua_pushstring(m_pState, file);
-
-	return lua_pcall(m_pState, 2, 0, tb) == 0;
-
-
+	CppLuaMgr::Obj().DoLogMessage(CppLuaMgr::Obj().m_info_log_fun, msg);
+	return 0;
 }
 
 void CppLuaMgr::RegFun2Lua(const char* funName, lua_CFunction fun) {
@@ -141,7 +122,7 @@ void CppLuaMgr::RegFun2Lua(const char* funName, lua_CFunction fun) {
 	lua_setglobal(m_pState, funName);
 }
 
-bool CppLuaMgr::ExecuteString(const char* str) {
+bool CppLuaMgr::DoString(const char* str) {
 	if (luaL_dostring(m_pState, str)) {
 		Traceback(m_pState);
 
@@ -150,7 +131,7 @@ bool CppLuaMgr::ExecuteString(const char* str) {
 	return true;
 }
 
-void CppLuaMgr::GenerateLuaError(const char* errorMsg, ...) {
+void CppLuaMgr::MakeLuaException(const char* errorMsg, ...) {
 	va_list args;
 	char msg[256];
 	va_start(args, errorMsg);
@@ -172,7 +153,7 @@ void CppLuaMgr::SetErrorLogFun(LOG_FUN function) {
 	m_error_log_fun = function;
 }
 
-bool CppLuaMgr::ReloadFile(const char* filePath)
+bool CppLuaMgr::DoFile(const char* filePath)
 {
 	bool failed = luaL_dofile(m_pState, filePath);
 
@@ -184,15 +165,7 @@ bool CppLuaMgr::ReloadFile(const char* filePath)
 	return !failed;
 }
 
-void CppLuaMgr::TryLog(const char* msg)
-{
-	if (!m_info_log_fun) {
-		printf("%s\n", msg);
-		return;
-	}
 
-	DoLogMessage(m_info_log_fun, msg);
-}
 
 void CppLuaMgr::TryError(const char* msg) {
 	if (!m_error_log_fun) {
