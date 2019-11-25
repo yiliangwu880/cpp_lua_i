@@ -13,6 +13,8 @@ extern "C"
 #include <sstream>
 
 using LOG_FUN = std::function<void(const char* fileName, uint32_t lineNum, const char* msg)>;
+//exception log fun
+using EXC_LOG_FUN = std::function<void(const char* msg)>;
 
 //cpp lua interface Mgr
 class CppLuaMgr
@@ -21,6 +23,7 @@ private:
 	lua_State* m_pState = nullptr;
 	LOG_FUN  m_info_log_fun = nullptr;
 	LOG_FUN  m_error_log_fun = nullptr;
+	EXC_LOG_FUN  m_exc_log_fun = nullptr;
 
 public:
 	static CppLuaMgr &Obj() 
@@ -41,19 +44,22 @@ public:
 
 	void SetInfoLogFun(LOG_FUN function);
 	void SetErrorLogFun(LOG_FUN function);
+	void SetExcLogFun(EXC_LOG_FUN function);
 
 
+	void TryInfo(const char* msg);
 	void TryError(const char* msg);
+	void TryException(const char* msg);
 	//当C++ 希望抛出一个Lua异常时,退出后续的lua执行
 	void MakeLuaException(const char* errorMsg, ...);
-	static void PrintStack(lua_State *pState);
+	static int ExceptionHandle(lua_State *pState);
 private:
 	CppLuaMgr();
 	~CppLuaMgr();
 
 	static int LogInfo(lua_State *L);
 	static int LogError(lua_State* L);
-	static int Traceback(lua_State *pState);
+	static int PrintStack(lua_State *pState);
 
 	void DoLogMessage(LOG_FUN function, const char* msg);
 };

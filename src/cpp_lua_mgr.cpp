@@ -11,11 +11,7 @@ static int Panic(lua_State* pState) {
 	return 0;
 }
 
-//static int adb(lua_State *pState)
-//{
-//	gScriptManager.GetDebugger()->Debug();
-//	return 0;
-//}
+
 
 //copy from lua5.2 ltablib.c 
 static int table_pack(lua_State *L) {
@@ -79,19 +75,15 @@ CppLuaMgr::~CppLuaMgr()
 
 
 
-int CppLuaMgr::Traceback(lua_State *pState) {
+int CppLuaMgr::ExceptionHandle(lua_State *pState) 
+{
 	const char *msg = lua_tostring(pState, -1);
-
 	if (msg) {
-		printf("%s", msg); // 显示在控制台提示一下
-		gScriptManager.TryError(msg);
+		gScriptManager.TryException(msg);
 	}
 
 	CppLuaMgr::Obj().PrintStack(pState);
 
-	//if (!gScriptManager.IsProtectModel()) {
-	//	gScriptManager.GetDebugger()->Debug();
-	//}
 
 	return 0;
 }
@@ -124,7 +116,7 @@ void CppLuaMgr::RegFun2Lua(const char* funName, lua_CFunction fun) {
 
 bool CppLuaMgr::DoString(const char* str) {
 	if (luaL_dostring(m_pState, str)) {
-		Traceback(m_pState);
+		ExceptionHandle(m_pState);
 
 		return false;
 	}
@@ -153,29 +145,50 @@ void CppLuaMgr::SetErrorLogFun(LOG_FUN function) {
 	m_error_log_fun = function;
 }
 
-bool CppLuaMgr::DoFile(const char* filePath)
+
+void CppLuaMgr::SetExcLogFun(EXC_LOG_FUN function)
 {
-	bool failed = luaL_dofile(m_pState, filePath);
-
-	if (failed)
-	{
-		TryError(lua_tostring(m_pState, -1));
-	}
-
-	return !failed;
+	m_exc_log_fun = function;
 }
 
 
 
+bool CppLuaMgr::DoFile(const char* filePath)
+{
+	lua_pushcfunction(m_pState, ExceptionHandle);
+	int tb = lua_gettop(m_pState);
+	bool failed = (luaL_loadfile(m_pState, filePath) || lua_pcall(m_pState, 0, LUA_MULTRET, tb));
+
+	return !failed;
+}
+
+void CppLuaMgr::TryInfo(const char* msg)
+{
+	if (!m_info_log_fun) {
+		printf("%s\n", msg); 
+		return;
+	}
+
+	DoLogMessage(m_info_log_fun, msg);
+}
+
 void CppLuaMgr::TryError(const char* msg) {
-	if (!m_error_log_fun) {
-		printf("%s\n", msg); // 显示在控制台提示一下
+	if (!m_error_log_fun) {// 显示在控制台提示一下
 		return;
 	}
 
 	DoLogMessage(m_error_log_fun, msg);
 }
 
+
+void CppLuaMgr::TryException(const char* msg) {
+	
+	if (!m_exc_log_fun) {
+		printf("%s\n", msg); // 显示在控制台提示一下
+		return;
+	}
+	m_exc_log_fun(msg);
+}
 
 
 void CppLuaMgr::DoLogMessage(LOG_FUN function, const char* msg) {
@@ -201,11 +214,12 @@ void CppLuaMgr::DoLogMessage(LOG_FUN function, const char* msg) {
 }
 
 
-void CppLuaMgr::PrintStack(lua_State *pState) {
+int CppLuaMgr::PrintStack(lua_State *pState) {
 	std::stringstream stackInfo;
 
 	lua_Debug info;
 	int depth = 0;
+	stackInfo << "\n";
 	while (lua_getstack(pState, depth, &info)) {
 		stackInfo << depth << " ";
 
@@ -231,9 +245,13 @@ void CppLuaMgr::PrintStack(lua_State *pState) {
 		stackInfo << "\n";
 		++depth;
 	}
+	if (!CppLuaMgr::Obj().m_exc_log_fun) {
+		printf("%s\n", stackInfo.str().c_str());
+		return 0;
+	}
 
-
-	gScriptManager.TryError(stackInfo.str().c_str());
+	CppLuaMgr::Obj().m_exc_log_fun(stackInfo.str().c_str());
+	return 0;
 }
 
 

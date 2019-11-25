@@ -47,6 +47,7 @@ function test()
 	--DDerror("al12")
 	return 1,2,3, "12345", 67111111111
 end
+
 LuaCallFun1(55);
 --LuaCallFun_exception();
 test()

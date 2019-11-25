@@ -14,13 +14,12 @@ private:
 public:
 	ScriptCaller(const char* fun_name);
 	~ScriptCaller();
-	static int Traceback(lua_State *pState);
 
     int GetArgsNum() {return m_numArgs;}
     void SetArgsNum(int args) { m_numArgs = args; }
 
     // 是否有这个函数
-    bool EnableCall();
+    bool IsOk();
 
 
 	//附加参数

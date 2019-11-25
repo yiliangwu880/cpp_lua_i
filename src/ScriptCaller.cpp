@@ -10,7 +10,7 @@ ScriptCaller::ScriptCaller( const char* funName)
 	, m_numArgs(0)
 	, m_called(false)
 {
-	lua_pushcfunction(m_pState, Traceback);
+	lua_pushcfunction(m_pState, CppLuaMgr::ExceptionHandle);
 	m_tb = lua_gettop(m_pState);
 
 	if (m_tb >= WEIRD_POS) {
@@ -43,20 +43,6 @@ ScriptCaller::~ScriptCaller() {
     lua_settop(m_pState, m_tb - 1); 
 }
 
-int ScriptCaller::Traceback(lua_State *pState) {
-	const char *msg = lua_tostring(pState, -1);
-
-	if (msg) {
-        printf("%s", msg); // 显示在控制台提示一下
-        gScriptManager.TryError(msg);
-	}
-    
-	CppLuaMgr::Obj().PrintStack(pState);
-
-
-    
-	return 0;
-}
 
 ScriptCaller& ScriptCaller::Arg(int value) {
 	lua_pushinteger(m_pState, value);
@@ -116,7 +102,7 @@ ScriptCaller& ScriptCaller::Arg(const std::string& value) {
     return *this;
 }
 
-bool ScriptCaller::EnableCall() {
+bool ScriptCaller::IsOk() {
     return lua_isfunction(m_pState, -1) || lua_iscfunction(m_pState, -1);
 }
 
@@ -128,7 +114,7 @@ bool ScriptCaller::Call(LuaResult* result) {
 	else {
 		m_called = true;
 	}
-
+	//@m_tb errFunc 错误处理函数，0表示无，表示错误处理函数在栈中的索引
     if (lua_pcall(m_pState, m_numArgs, LUA_MULTRET, m_tb)) {
 		return false;
 	}

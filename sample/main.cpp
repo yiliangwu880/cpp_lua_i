@@ -13,6 +13,12 @@ void MyErrorLogFun(const char* fileName, uint32_t lineNum, const char* msg)
 	UNIT_ERROR("%s [filename=%s line=%d] ", msg, fileName, lineNum);
 }
 
+void MyExcLogFun(const char* msg)
+{
+	UNIT_ERROR("%s ", msg);
+}
+
+
 int LuaCallFun1(lua_State *pState)
 {
 	int a = lua_tointeger(pState, -1);
@@ -25,10 +31,30 @@ int LuaCallFun_exception(lua_State *pState)
 	CppLuaMgr::Obj().MakeLuaException("LuaCallFun_exception make exception");
 	return 0;
 }
+
+void RunException()
+{
+
+	UNIT_INFO("run exception start");
+	CppLuaMgr::Obj().DoFile("../sample/script/exception_main.lua");
+
+	UNIT_INFO("-------------------");
+	{
+		ScriptCaller caller("callLuaException");
+		if (caller.IsOk())
+		{
+			caller.Call();
+		}
+	}
+
+}
+
 int main(int argc, char* argv[])
 {
 	CppLuaMgr::Obj().SetInfoLogFun(MyLogFun);
 	CppLuaMgr::Obj().SetErrorLogFun(MyErrorLogFun);
+	CppLuaMgr::Obj().SetExcLogFun(MyExcLogFun);
+
 	REG_C_FUN(LuaCallFun1);
 	REG_C_FUN(LuaCallFun_exception);
 
@@ -37,7 +63,7 @@ int main(int argc, char* argv[])
 
 	{
 		ScriptCaller caller("call1");
-		if (caller.EnableCall())
+		if (caller.IsOk())
 		{
 			caller << 12 << "a";
 			LuaResult result;
@@ -56,7 +82,7 @@ int main(int argc, char* argv[])
 	{
 		ScriptCaller caller("call1");
 		caller << 13 << "a";
-		if (caller.EnableCall())
+		if (caller.IsOk())
 		{
 			LuaResult result;
 			caller.Call(&result);
@@ -72,14 +98,7 @@ int main(int argc, char* argv[])
 		}
 	}
 
-
-	{
-		ScriptCaller caller("callLuaException");
-		if (caller.EnableCall())
-		{
-			caller.Call();
-		}
-	}
+	RunException();
 	return 0;
 }
 
