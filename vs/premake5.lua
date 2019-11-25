@@ -40,6 +40,18 @@ Project "sample"
 		"../bin/sample/**", 
 	}
 
+	    
+ 
+Project "test"
+	IncludeFile { 
+		"../include/",
+	}
+
+	SrcPath { 
+		"../test/**",  --**递归所有子目录，指定目录可用 "cc/*.cpp" 或者  "cc/**.cpp"
+		"../bin/test/**", 
+	}
+
 	
 
 

@@ -1,4 +1,7 @@
-//cpp 调用lua函数用，简化接口，增加可读性
+/*
+cpp 调用lua函数用，简化接口，增加可读性
+*/
+
 #pragma once
 #include "LuaResult.h"
 
@@ -21,6 +24,8 @@ public:
     // 是否有这个函数
     bool IsExistFun();
 
+	bool Call(LuaResult* result = NULL);
+	bool Result(LuaResult &result);
 
 	//附加参数
 	template<typename T>
@@ -40,10 +45,47 @@ public:
         return *this;
     }
 
-    bool Call(LuaResult* result = NULL);
+	inline bool operator() ()
+	{
+		return ExCall();
+	}
+
+	template <class P1>
+	bool operator() (P1 p1) 
+	{
+		PushObject(p1);
+		return ExCall();
+	}
+
+	template <class P1, class P2>
+	bool operator() (P1 p1, P2 p2) 
+	{
+		PushObject(p1);
+		PushObject(p2);
+		return ExCall();
+	}
+	template <class P1, class P2, class P3>
+	bool operator() (P1 p1, P2 p2, P3 p3)
+	{
+		PushObject(p1);
+		PushObject(p2);
+		PushObject(p3);
+		return ExCall();
+	}
+	template <class P1, class P2, class P3, class P4>
+	bool operator() (P1 p1, P2 p2, P3 p3, P4 p4)
+	{
+		PushObject(p1);
+		PushObject(p2);
+		PushObject(p3);
+		PushObject(p4);
+		return ExCall();
+	}
+
 
 private:
 
+	bool ExCall();
 	LuaCaller& Arg(int value);
 	LuaCaller& Arg(const char* value);
 	LuaCaller& Arg(double value);

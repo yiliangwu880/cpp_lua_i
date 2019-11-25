@@ -108,7 +108,8 @@ bool LuaCaller::IsExistFun() {
     return m_is_exist_fun;
 }
 
-bool LuaCaller::Call(LuaResult* result) {
+bool LuaCaller::ExCall()
+{
 	if (!m_is_exist_fun)
 	{
 		return false;
@@ -124,6 +125,16 @@ bool LuaCaller::Call(LuaResult* result) {
     if (lua_pcall(m_pState, m_numArgs, LUA_MULTRET, m_tb)) {
 		return false;
 	}
+	return true;
+}
+
+
+bool LuaCaller::Call(LuaResult* result) {
+
+	if (!ExCall())
+	{
+		return false;
+	}
 
     if (result) {
         int resultCount = lua_gettop(m_pState) - m_tb;
@@ -132,5 +143,18 @@ bool LuaCaller::Call(LuaResult* result) {
         result->SetLuaState(m_pState);
     }
 
+	return true;
+}
+
+bool LuaCaller::Result(LuaResult &result)
+{
+	if (!m_called) 
+	{
+		return false;
+	}
+	int resultCount = lua_gettop(m_pState) - m_tb;
+
+	result.SetResultCount(resultCount);
+	result.SetLuaState(m_pState);
 	return true;
 }
