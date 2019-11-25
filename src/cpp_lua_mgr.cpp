@@ -5,11 +5,6 @@ using namespace std;
 namespace{
 
 
-static int Panic(lua_State* pState) {
-	const char *msg = lua_tostring(pState, -1);
-	gScriptManager.TryError(msg);
-	return 0;
-}
 
 
 
@@ -74,12 +69,17 @@ CppLuaMgr::~CppLuaMgr()
 }
 
 
+int  CppLuaMgr::Panic(lua_State* pState) {
+	const char *msg = lua_tostring(pState, -1);
+	CppLuaMgr::Obj().TryError(msg);
+	return 0;
+}
 
 int CppLuaMgr::ExceptionHandle(lua_State *pState) 
 {
 	const char *msg = lua_tostring(pState, -1);
 	if (msg) {
-		gScriptManager.TryException(msg);
+		CppLuaMgr::Obj().TryException(msg);
 	}
 
 	CppLuaMgr::Obj().PrintStack(pState);
@@ -92,7 +92,7 @@ int CppLuaMgr::ExceptionHandle(lua_State *pState)
 int CppLuaMgr::LogError(lua_State* L)
 {
 	const char *msg = lua_tostring(L, -1);
-	gScriptManager.TryError(msg);
+	CppLuaMgr::Obj().TryError(msg);
 	return 0;
 }
 

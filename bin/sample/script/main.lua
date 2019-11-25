@@ -30,6 +30,7 @@ function call2()
 end
 
 function call1(p1,p2)
+	LogInfo("run call1")
 	local a = 1
 	--call2()
 	return p1,p2
@@ -48,6 +49,3 @@ function test()
 	return 1,2,3, "12345", 67111111111
 end
 
-LuaCallFun1(55);
---LuaCallFun_exception();
-test()

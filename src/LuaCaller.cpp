@@ -1,11 +1,11 @@
 
-#include "ScriptCaller.h"
+#include "LuaCaller.h"
 
 #include <string>
 
 static const int WEIRD_POS = 20;
 
-ScriptCaller::ScriptCaller( const char* funName)
+LuaCaller::LuaCaller( const char* funName)
 	: m_pState(CppLuaMgr::Obj().GetLuaState())
 	, m_numArgs(0)
 	, m_called(false)
@@ -14,7 +14,7 @@ ScriptCaller::ScriptCaller( const char* funName)
 	m_tb = lua_gettop(m_pState);
 
 	if (m_tb >= WEIRD_POS) {
-		gScriptManager.TryError("lua 堆栈上caller有异常！！！");
+		CppLuaMgr::Obj().TryError("lua 堆栈上caller有异常！！！");
 	}
 
     std::string fun = funName;
@@ -34,48 +34,50 @@ ScriptCaller::ScriptCaller( const char* funName)
     } else {
         lua_getglobal(m_pState, funName);
     }
+
+	m_is_exist_fun = lua_isfunction(m_pState, -1) || lua_iscfunction(m_pState, -1);
 }
 
 
 
 
-ScriptCaller::~ScriptCaller() {
+LuaCaller::~LuaCaller() {
     lua_settop(m_pState, m_tb - 1); 
 }
 
 
-ScriptCaller& ScriptCaller::Arg(int value) {
+LuaCaller& LuaCaller::Arg(int value) {
 	lua_pushinteger(m_pState, value);
 	++m_numArgs;
 	return *this;
 }
  
-ScriptCaller& ScriptCaller::Arg(const char* value) {
+LuaCaller& LuaCaller::Arg(const char* value) {
 	lua_pushstring(m_pState, value);
 	++m_numArgs;
 	return *this;
 }
 
-ScriptCaller& ScriptCaller::Arg(double value) {
+LuaCaller& LuaCaller::Arg(double value) {
 	lua_pushnumber(m_pState, value);
 	++m_numArgs;
 	return *this;
 }
 
-ScriptCaller& ScriptCaller::Arg(bool value) {
+LuaCaller& LuaCaller::Arg(bool value) {
 	lua_pushboolean(m_pState, value);
 	++m_numArgs;
 	return *this;
 }
 
-ScriptCaller& ScriptCaller::Arg(unsigned long value) {
+LuaCaller& LuaCaller::Arg(unsigned long value) {
     luabridge::Stack<unsigned long>::push(m_pState, value);
     ++m_numArgs;
 
     return *this;
 }
 
-ScriptCaller& ScriptCaller::Arg(unsigned long long value) {
+LuaCaller& LuaCaller::Arg(unsigned long long value) {
     luabridge::Stack<unsigned long long>::push(m_pState, value);
     ++m_numArgs;
 
@@ -83,30 +85,34 @@ ScriptCaller& ScriptCaller::Arg(unsigned long long value) {
 }
 
 
-ScriptCaller& ScriptCaller::Arg(unsigned int value)
+LuaCaller& LuaCaller::Arg(unsigned int value)
 {
     lua_pushinteger(m_pState, value);
     ++m_numArgs;
     return *this;
 }
 
-ScriptCaller& ScriptCaller::Arg(long int value) {
+LuaCaller& LuaCaller::Arg(long int value) {
     luabridge::Stack<long int>::push(m_pState, value);
     ++m_numArgs;
     return *this;
 }
 
-ScriptCaller& ScriptCaller::Arg(const std::string& value) {
+LuaCaller& LuaCaller::Arg(const std::string& value) {
     lua_pushlstring(m_pState, value.c_str(), value.size());
     ++m_numArgs;
     return *this;
 }
 
-bool ScriptCaller::IsOk() {
-    return lua_isfunction(m_pState, -1) || lua_iscfunction(m_pState, -1);
+bool LuaCaller::IsExistFun() {
+    return m_is_exist_fun;
 }
 
-bool ScriptCaller::Call(LuaResult* result) {
+bool LuaCaller::Call(LuaResult* result) {
+	if (!m_is_exist_fun)
+	{
+		return false;
+	}
 	if (m_called) {
 		// CTODO: log日志
 		return false;

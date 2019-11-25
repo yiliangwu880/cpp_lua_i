@@ -54,10 +54,10 @@ struct LuaArg<float> {
 // lua返回值
 class LuaArgInterface;
 struct lua_State;
-class ScriptCaller;
+class LuaCaller;
 
 class LuaResult {
-    friend ScriptCaller;
+    friend LuaCaller;
 public:
     LuaResult();
     ~LuaResult();
@@ -76,6 +76,7 @@ public:
         return m_resultCount;
     }
 
+	//返回C++对象
     template<typename T>
     T GetObjectResult() {
         int index = lua_gettop(m_pState) - m_resultCount + 1;
@@ -85,9 +86,7 @@ public:
     
 private:
     void SetLuaState(lua_State* pState);
-
     void SetResultCount(int count);
-
     bool Result(bool);
     int Result(int);
     unsigned int Result(unsigned int);
@@ -100,7 +99,7 @@ private:
     unsigned long long Result(unsigned long long);
 
 private:
-    lua_State* m_pState;
+    lua_State* m_pState = nullptr;
     int m_resultCount;
 
 };

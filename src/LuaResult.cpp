@@ -1,8 +1,5 @@
 #include "LuaResult.h"
 
-
-// 实现
-
 LuaResult::LuaResult() : m_pState(NULL), m_resultCount(0) {
 
 }
